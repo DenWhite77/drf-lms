@@ -37,5 +37,25 @@ python manage.py createsuperuser
 python manage.py runserver
 ```
 
+## API Эндпоинты
+
+### Курсы
+- `GET /api/courses/` — список курсов
+- `POST /api/courses/` — создание курса
+- `GET /api/courses/{id}/` — получение курса
+- `PUT /api/courses/{id}/` — обновление курса
+- `DELETE /api/courses/{id}/` — удаление курса
+
+### Уроки
+- `GET /api/lessons/` — список уроков
+- `POST /api/lessons/` — создание урока
+- `GET /api/lessons/{id}/` — получение урока
+- `PATCH /api/lessons/{id}/` — обновление урока
+- `DELETE /api/lessons/{id}/` — удаление урока
+
+### Пользователи (доп. задание)
+- `GET /api/users/{id}/` — профиль пользователя
+- `PATCH /api/users/{id}/` — обновление профиля пользователя
+
 ## Автор
 DenWhite77
