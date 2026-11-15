@@ -92,5 +92,29 @@ python manage.py runserver
 python manage.py create_test_data
 ```
 
+## Аутентификация и права доступа
+
+В проекте используется **JWT-аутентификация** (`djangorestframework-simplejwt`).
+
+### Получение токена
+- `POST /api/token/` — принимает `{"email": "...", "password": "..."}` и выдает пару `access/refresh`.
+- `POST /api/token/refresh/` — обновляет `access` токен по `refresh`.
+
+### Роли
+- **Аноним** — может только зарегистрироваться (`POST /api/register/`) или получить токен.
+- **Пользователь** — видит, редактирует и удаляет **только свои** курсы и уроки.
+- **Модератор** (группа `Модераторы`) — видит все курсы и уроки, может их **редактировать**, но **не может создавать и удалять**.
+
+### Права на эндпоинты
+- Все эндпоинты, кроме `/api/token/` и `/api/register/`, требуют заголовок `Authorization: Bearer <access_token>`.
+- Для `CourseViewSet` права настраиваются по `action` (`create`, `update`, `destroy`, `list`/`retrieve`).
+- Для `Lesson` права настраиваются по HTTP-методу (`GET`, `POST`, `PUT/PATCH`, `DELETE`).
+- Проверка прав реализована в `lms/permissions.py` (классы `IsModerator` и `IsOwner`).
+
+### Заполнение группы «Модераторы»
+- Фикстура: `users/fixtures/groups.json`.
+- Загрузить: `python manage.py loaddata users/fixtures/groups.json`.
+- Назначить пользователя в группу через админку (`/admin/`).
+
 ## Автор
 DenWhite77
