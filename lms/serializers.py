@@ -4,13 +4,17 @@ from .validators import YoutubeLinkValidator
 
 
 class LessonSerializer(serializers.ModelSerializer):
+    # Добавляем валидатор прямо в поле
+    video_link = serializers.URLField(
+        validators=[YoutubeLinkValidator(field='video_link')],
+        required=False,
+        allow_null=True
+    )
+
     class Meta:
         model = Lesson
         fields = '__all__'
         read_only_fields = ('owner',)
-        validators = [
-            YoutubeLinkValidator(field='video_link')
-        ]
 
 
 class CourseSerializer(serializers.ModelSerializer):

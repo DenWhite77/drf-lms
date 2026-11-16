@@ -3,17 +3,18 @@ from urllib.parse import urlparse
 
 
 class YoutubeLinkValidator:
-    """Проверяет, что ссылка ведет только на youtube.com или youtu.be."""
-
     def __init__(self, field):
         self.field = field
 
     def __call__(self, value):
+        # Если пришел словарь (при использовании в Meta), берем значение поля
+        if isinstance(value, dict):
+            value = value.get(self.field)
+
         if not value:
-            return value
+            return
 
         parsed = urlparse(value)
-        # Разрешенные домены
         allowed_domains = ['youtube.com', 'www.youtube.com', 'youtu.be']
 
         if parsed.netloc not in allowed_domains:
@@ -21,4 +22,3 @@ class YoutubeLinkValidator:
                 f'Ссылка в поле "{self.field}" должна вести только на youtube.com. '
                 f'Сторонние ресурсы запрещены.'
             )
-        return value

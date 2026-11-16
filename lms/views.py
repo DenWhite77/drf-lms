@@ -5,7 +5,7 @@ from django.shortcuts import get_object_or_404
 
 from .models import Course, Lesson, Subscription
 from .serializers import CourseSerializer, LessonSerializer
-from .permissions import IsModerator, IsOwner
+from .permissions import IsModerator, IsOwner, IsOwnerAndNotModerator, IsModeratorOrOwner
 from .paginators import StandardResultsSetPagination
 
 # --- Курсы (ViewSet) ---
@@ -20,7 +20,7 @@ class CourseViewSet(viewsets.ModelViewSet):
         elif self.action in ['update', 'partial_update']:
             self.permission_classes = [permissions.IsAuthenticated, IsModerator | IsOwner]
         elif self.action == 'destroy':
-            self.permission_classes = [permissions.IsAuthenticated, ~IsModerator, IsOwner]
+            self.permission_classes = [permissions.IsAuthenticated, IsOwnerAndNotModerator]
         else:
             self.permission_classes = [permissions.IsAuthenticated]
         return [permission() for permission in self.permission_classes]
@@ -52,12 +52,11 @@ class LessonRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_permissions(self):
         if self.request.method in ['PUT', 'PATCH']:
-            self.permission_classes = [permissions.IsAuthenticated, IsModerator | IsOwner]
+            return [permissions.IsAuthenticated(), IsModeratorOrOwner()]
         elif self.request.method == 'DELETE':
-            self.permission_classes = [permissions.IsAuthenticated, ~IsModerator, IsOwner]
+            return [permissions.IsAuthenticated(), IsOwnerAndNotModerator()]
         else:
-            self.permission_classes = [permissions.IsAuthenticated]
-        return [permission() for permission in self.permission_classes]
+            return [permissions.IsAuthenticated()]
 
 
 class SubscriptionAPIView(APIView):
