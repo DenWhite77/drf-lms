@@ -1,12 +1,23 @@
-from rest_framework import viewsets, generics, permissions
+from rest_framework import viewsets, generics, permissions, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
+from decimal import Decimal
+from drf_spectacular.utils import extend_schema
 
 from .models import Course, Lesson, Subscription
+from users.models import Payment
 from .serializers import CourseSerializer, LessonSerializer
 from .permissions import IsModerator, IsOwner, IsOwnerAndNotModerator, IsModeratorOrOwner
 from .paginators import StandardResultsSetPagination
+
+# Импорты из твоего нового файла services.py
+from .services import (
+    create_stripe_product,
+    create_stripe_price,
+    create_stripe_session,
+    get_stripe_session_status,
+)
 
 # --- Курсы (ViewSet) ---
 class CourseViewSet(viewsets.ModelViewSet):
@@ -77,3 +88,67 @@ class SubscriptionAPIView(APIView):
             message = 'подписка добавлена'
 
         return Response({"message": message})
+
+
+@extend_schema(
+    summary="Создание платежа",
+    description="Создает продукт и цену в Stripe, возвращает ссылку на оплату.",
+    request={"application/json": {"type": "object", "properties": {"course_id": {"type": "integer"}, "lesson_id": {"type": "integer"}}}}, # <--- ДОБАВИТЬ ЭТО
+    responses={201: None}
+)
+class PaymentCreateAPIView(APIView):
+    def post(self, request):
+        user = request.user
+        course_id = request.data.get('course_id')
+        lesson_id = request.data.get('lesson_id')
+
+        if course_id:
+            item = get_object_or_404(Course, id=course_id)
+            amount = Decimal('1000.00')  # Заглушка суммы
+            item_name = item.title
+        elif lesson_id:
+            item = get_object_or_404(Lesson, id=lesson_id)
+            amount = Decimal('500.00')  # Заглушка суммы
+            item_name = item.title
+        else:
+            return Response({"error": "Укажите course_id или lesson_id"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 1. Создаем продукт
+        product_id = create_stripe_product(item_name)
+
+        # 2. Создаем цену (в копейках!)
+        amount_kopecks = int(amount * 100)
+        price_id = create_stripe_price(product_id, amount_kopecks)
+
+        # 3. Создаем сессию
+        success_url = "http://127.0.0.1:8000/api/payments/success/"
+        cancel_url = "http://127.0.0.1:8000/api/payments/cancel/"
+        session = create_stripe_session(price_id, success_url, cancel_url)
+
+        # 4. Сохраняем в базу
+        payment = Payment.objects.create(
+            user=user,
+            course=item if course_id else None,
+            lesson=item if lesson_id else None,
+            amount=amount,
+            stripe_product_id=product_id,
+            stripe_price_id=price_id,
+            stripe_session_id=session.id,
+            payment_link=session.url,
+            status='pending'
+        )
+
+        return Response({
+            "payment_link": payment.payment_link,
+            "payment_id": payment.id
+        }, status=status.HTTP_201_CREATED)
+
+
+@extend_schema(
+    summary="Статус платежа",
+    description="Возвращает статус сессии оплаты по её ID.",
+)
+class PaymentStatusAPIView(APIView):
+    def get(self, request, session_id):
+        status_stripe = get_stripe_session_status(session_id)
+        return Response({"status": status_stripe})

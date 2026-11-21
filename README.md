@@ -124,5 +124,22 @@ python manage.py create_test_data
 - **Пагинация**: Настроена для списка курсов и уроков (по 3 элемента на страницу).
 - **Тестирование**: Покрытие тестами (CRUD уроков, валидация, подписки, права доступа). Отчет в `coverage.txt`.
 
+## Интеграция со Stripe и Документация
+
+### Новые эндпоинты:
+- `POST /api/payments/create/` — создание платежа. Принимает `course_id` или `lesson_id`. Возвращает ссылку на оплату (`payment_link`).
+- `GET /api/payments/status/{session_id}/` — получение статуса сессии оплаты.
+
+### Документация API (Swagger):
+Доступна по адресам:
+- Swagger UI: `http://127.0.0.1:8000/api/docs/`
+- ReDoc: `http://127.0.0.1:8000/api/redoc/`
+- Схема (YAML): `http://127.0.0.1:8000/api/schema/`
+
+### Переменные окружения:
+Для работы Stripe в файле `.env` должны быть указаны:
+- `STRIPE_SECRET_KEY`
+- `STRIPE_PUBLISHABLE_KEY`
+- 
 ## Автор
 DenWhite77

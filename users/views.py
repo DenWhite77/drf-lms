@@ -16,8 +16,16 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
 
     def get_permissions(self):
-        if self.action in ['update', 'partial_update', 'destroy']:
-            return [permissions.IsAuthenticated(), permissions.IsAdminUser() | IsSelf()]
+        # Вместо | используем список, который понимает и Django, и Swagger
+        class IsAdminOrSelf(permissions.BasePermission):
+            def has_object_permission(self, request, view, obj):
+                return request.user.is_staff or request.user == obj
+
+            def has_permission(self, request, view):
+                return request.user and request.user.is_authenticated
+
+        if self.action in ['retrieve', 'update', 'partial_update', 'destroy']:
+            return [IsAdminOrSelf()]
         return [permissions.IsAuthenticated()]
 
 
