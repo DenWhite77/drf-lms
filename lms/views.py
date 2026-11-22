@@ -39,6 +39,11 @@ class CourseViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
 
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        from .tasks import send_course_update_email
+        send_course_update_email.delay(instance.id)
+
 
 # --- Уроки (Generic) ---
 class LessonListCreateAPIView(generics.ListCreateAPIView):
@@ -68,6 +73,19 @@ class LessonRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
             return [permissions.IsAuthenticated(), IsOwnerAndNotModerator()]
         else:
             return [permissions.IsAuthenticated()]
+
+    def perform_update(self, serializer):
+        from django.utils import timezone
+        from datetime import timedelta
+        from .tasks import send_course_update_email
+
+        instance = serializer.save()
+        course = instance.course
+
+
+        if course.updated_at < timezone.now() - timedelta(hours=4):
+            course.save()
+            send_course_update_email.delay(course.id)
 
 
 class SubscriptionAPIView(APIView):

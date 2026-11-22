@@ -2,13 +2,25 @@ name: Django CI
 
 on:
   push:
-    branches: [ "main", "develop", "feature/homework-1" ]
+    branches: [ "main", "develop", "feature/**" ]
   pull_request:
-    branches: [ "develop", "feature/homework-1" ]
+    branches: [ "main", "develop" ]
 
 jobs:
   test:
     runs-on: ubuntu-latest
+
+    # Добавляем Redis, чтобы Celery мог к нему подключиться при тестах
+    services:
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - name: Checkout code
@@ -26,6 +38,18 @@ jobs:
 
       - name: Run Django check
         run: python manage.py check
+        env:
+          SECRET_KEY: 'django-insecure-test-key'
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          STRIPE_SECRET_KEY: 'sk_test_dummy'
+          STRIPE_PUBLISHABLE_KEY: 'pk_test_dummy'
 
       - name: Run tests
         run: python manage.py test
+        env:
+          SECRET_KEY: 'django-insecure-test-key'
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          STRIPE_SECRET_KEY: 'sk_test_dummy'
+          STRIPE_PUBLISHABLE_KEY: 'pk_test_dummy'
