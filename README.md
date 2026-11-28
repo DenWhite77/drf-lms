@@ -13,29 +13,29 @@
 ## Установка и запуск
 
 ### 1. Клонирование
-```bash
+
 git clone https://github.com/DenWhite77/drf-lms.git
 cd drf-lms
-```
+
 
 ### 2. Виртуальное окружение
-```bash
+
 python -m venv .venv
 .venv\Scripts\activate      # Windows
 source .venv/bin/activate   # Linux / macOS
-```
+
 
 ### 3. Зависимости
-```bash
+
 pip install -r requirements.txt
-```
+
 
 ### 3. Миграции и запуск
-```bash
+
 python manage.py migrate
 python manage.py createsuperuser
 python manage.py runserver
-```
+
 
 ## API Эндпоинты
 
@@ -150,14 +150,32 @@ python manage.py create_test_data
 2. **Рассылка писем:** При обновлении курса (или урока, если курс не обновлялся более 4 часов) подписчикам отправляется уведомление на почту.
 3. **Блокировка неактивных:** Каждый день в полночь фоновая задача проверяет пользователей, не заходивших более 30 дней, и блокирует их (`is_active = False`).
 
-### Как запустить локально:
-1. Убедитесь, что запущен Redis (например, через Docker: `docker run -d -p 6379:6379 redis:7.2`).
-2. Запустите Celery Worker (в Windows использовать флаг `-P solo`):
- - celery -A config worker -l info -P solo
-3. Запустите Celery Beat (планировщик): 
- - celery -A config beat -l info
-4. Запустите сам сервер Django: 
- - python manage.py runserver
+## Запуск проекта (через Docker)
+Проект полностью контейнеризирован. Для запуска всех сервисов (Django, PostgreSQL, Redis, Celery) достаточно одной команды.
+
+### Требования
+- Установленный Docker и Docker Compose.
+
+### Шаги запуска:
+
+1. Клонируйте репозиторий: 
+git clone <ссылка_на_репозиторий>
+   cd drf-lms
+
+2. Создайте файл .env на основе .env.template и заполните его своими данными (ключи Stripe, пароли для БД):
+cp .env.template .env
+
+3. Запустите проект: 
+docker-compose up -d --build
+
+4. Примените миграции (если они не применились автоматически):
+docker-compose exec web python manage.py migrate
+
+5. Проект будет доступен по адресу: http://127.0.0.1:8000/
+   Документация Swagger: http://127.0.0.1:8000/api/docs/
+
+## Остановка проекта (через Docker)
+docker-compose down
 
 ### Проверяем тесты
 В терминале (где `.venv`, но не в `shell`) запусти:
