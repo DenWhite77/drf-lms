@@ -2,16 +2,29 @@ name: Django CI
 
 on:
   push:
-    branches: [ "main", "develop", "feature/**" ]
+    branches: [ "main", "feature/**" ]
   pull_request:
-    branches: [ "main", "develop" ]
+    branches: [ "main" ]
 
 jobs:
   test:
     runs-on: ubuntu-latest
 
-    # Добавляем Redis, чтобы Celery мог к нему подключиться при тестах
     services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: lms_db
+          POSTGRES_USER: lms_user
+          POSTGRES_PASSWORD: lms_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
       redis:
         image: redis:7
         ports:
@@ -40,6 +53,11 @@ jobs:
         run: python manage.py check
         env:
           SECRET_KEY: 'django-insecure-test-key'
+          POSTGRES_DB: lms_db
+          POSTGRES_USER: lms_user
+          POSTGRES_PASSWORD: lms_password
+          DB_HOST: localhost
+          DB_PORT: 5432
           REDIS_HOST: localhost
           REDIS_PORT: 6379
           STRIPE_SECRET_KEY: 'sk_test_dummy'
@@ -49,6 +67,11 @@ jobs:
         run: python manage.py test
         env:
           SECRET_KEY: 'django-insecure-test-key'
+          POSTGRES_DB: lms_db
+          POSTGRES_USER: lms_user
+          POSTGRES_PASSWORD: lms_password
+          DB_HOST: localhost
+          DB_PORT: 5432
           REDIS_HOST: localhost
           REDIS_PORT: 6379
           STRIPE_SECRET_KEY: 'sk_test_dummy'
